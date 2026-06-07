@@ -1,2 +1,475 @@
 # typing-game
 打字遊戲
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⌨️ 打字手速挑戰 - 全球排行榜</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 100%); 
+            color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; text-align: center; padding: 20px;
+        }
+        .container { width: 560px; padding: 30px; }
+        h1 { font-size: 30px; margin-bottom: 4px; letter-spacing: 2px; }
+        .subtitle { color: #aaa; font-size: 13px; margin-bottom: 18px; }
+        
+        .stats { display: flex; justify-content: space-around; margin: 18px 0; flex-wrap: wrap; gap: 8px; }
+        .stat-box { 
+            background: rgba(255,255,255,0.07); padding: 14px 16px; 
+            border-radius: 14px; min-width: 75px; transition: 0.3s;
+        }
+        .stat-box:hover { background: rgba(255,255,255,0.12); }
+        .stat-value { font-size: 32px; font-weight: bold; color: #ffd700; }
+        .stat-label { font-size: 11px; color: #aaa; margin-top: 3px; letter-spacing: 1px; }
+
+        .target-word { 
+            font-size: 50px; font-weight: bold; letter-spacing: 4px; 
+            margin: 22px 0; padding: 22px; 
+            background: rgba(255,255,255,0.04); border-radius: 18px;
+            animation: glow 2s ease-in-out infinite; min-height: 85px;
+            display: flex; align-items: center; justify-content: center;
+            word-break: break-all; border: 1px solid rgba(255,215,0,0.15);
+        }
+        @keyframes glow { 
+            0%,100% { box-shadow: 0 0 20px rgba(255,215,0,0.25); }
+            50% { box-shadow: 0 0 45px rgba(255,215,0,0.5); } 
+        }
+
+        input { 
+            width: 100%; padding: 16px; font-size: 22px; 
+            text-align: center; border: 2px solid #333; 
+            border-radius: 12px; background: #151530; color: #fff; 
+            outline: none; letter-spacing: 3px; transition: 0.3s;
+        }
+        input:focus { border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+        input:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .combo { color: #ff6b6b; font-size: 17px; margin-top: 10px; min-height: 25px; font-weight: bold; }
+
+        .btn-row { margin: 16px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { 
+            padding: 11px 22px; font-size: 15px; 
+            background: #ffd700; color: #000; border: none; 
+            border-radius: 10px; cursor: pointer; font-weight: bold;
+            letter-spacing: 0.5px; transition: 0.2s;
+        }
+        button:hover { background: #ffe44d; transform: translateY(-1px); }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-outline { background: transparent; border: 2px solid #ffd700; color: #ffd700; }
+        .btn-outline:hover { background: rgba(255,215,0,0.12); }
+        .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 8px; }
+
+        .name-row { display: flex; gap: 8px; margin: 14px 0; align-items: center; justify-content: center; }
+        .name-row input { width: 140px; padding: 8px 12px; font-size: 14px; letter-spacing: 1px; }
+        .name-row span { font-size: 14px; color: #ccc; }
+
+        .tabs { display: flex; gap: 0; margin: 18px 0 10px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,215,0,0.2); }
+        .tab { 
+            flex: 1; padding: 10px; background: rgba(255,255,255,0.05); 
+            cursor: pointer; font-size: 14px; border: none; color: #aaa;
+            transition: 0.3s; letter-spacing: 0.5px;
+        }
+        .tab.active { background: #ffd700; color: #000; font-weight: bold; }
+        .tab:hover:not(.active) { background: rgba(255,215,0,0.1); color: #ddd; }
+
+        .leaderboard { 
+            background: rgba(255,255,255,0.04); border-radius: 14px; padding: 14px; 
+            max-height: 420px; overflow-y: auto; margin-top: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .leaderboard::-webkit-scrollbar { width: 4px; }
+        .leaderboard::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 2px; }
+        
+        .leader-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); 
+            font-size: 13px; transition: 0.2s; border-radius: 6px;
+        }
+        .leader-item:hover { background: rgba(255,255,255,0.03); }
+        .leader-rank { font-weight: bold; min-width: 36px; font-size: 14px; }
+        .rank-1 { color: #ffd700; font-size: 16px; } 
+        .rank-2 { color: #c0c0c0; font-size: 15px; } 
+        .rank-3 { color: #cd7f32; font-size: 15px; }
+        .me { background: rgba(255,215,0,0.12); border-radius: 8px; }
+        
+        .personal-best { 
+            background: rgba(255,215,0,0.08); border-radius: 12px; 
+            padding: 12px; margin-bottom: 12px; font-size: 14px;
+            border: 1px solid rgba(255,215,0,0.15);
+        }
+        .status { font-size: 11px; margin-top: 10px; padding: 6px 12px; border-radius: 20px; display: inline-block; }
+        .status-ok { background: rgba(74,222,128,0.15); color: #4ade80; }
+        .status-err { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+        .status-load { background: rgba(255,215,0,0.1); color: #ffd700; }
+        
+        @media (max-width: 500px) {
+            .container { width: 100%; padding: 15px; }
+            .target-word { font-size: 36px; padding: 16px; }
+            .stat-value { font-size: 24px; }
+            h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⌨️ 打字手速挑戰</h1>
+        <div class="subtitle">🌍 全球公開排行榜 · 前 200 名即時更新</div>
+
+        <div class="name-row">
+            <span>暱稱：</span>
+            <input type="text" id="nameInput" placeholder="輸入你的名字" maxlength="12">
+            <button id="saveNameBtn" class="btn-sm">💾 儲存</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="score">0</div>
+                <div class="stat-label">⭐ 得分</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="timer">30</div>
+                <div class="stat-label">⏱️ 秒數</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="wpm">0</div>
+                <div class="stat-label">⚡ WPM</div>
+            </div>
+            <div class="stat-box" style="background:rgba(255,215,0,0.12);">
+                <div class="stat-value" id="bestScore" style="color:#ffe44d;font-size:26px;">-</div>
+                <div class="stat-label">🏅 個人最佳</div>
+            </div>
+        </div>
+
+        <div class="target-word" id="targetWord">準備開始</div>
+        <input type="text" id="inputBox" placeholder="在這裡打字..." autocomplete="off" disabled>
+        <div class="combo" id="comboText"></div>
+
+        <div class="btn-row">
+            <button id="startBtn">🎮 開始遊戲</button>
+            <button id="resetBtn" class="btn-outline">🔄 重新開始</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="global">🌍 全球排行 Top 200</button>
+            <button class="tab" data-tab="recent">🕐 最新紀錄</button>
+        </div>
+
+        <div class="personal-best" id="personalBest" style="display:none;">
+            🏅 <span id="pbName"></span> 歷史最高：<strong><span id="pbScore"></span> 分</strong>（<span id="pbWPM"></span> WPM · 連擊 <span id="pbCombo"></span> 次）
+        </div>
+
+        <div class="leaderboard" id="leaderList">
+            <div class="leader-item"><span>🔄 載入中...</span></div>
+        </div>
+        <div id="statusText" class="status status-load">🔄 連線中...</div>
+    </div>
+
+    <script>
+        // =============================================
+        // 🔽 唯一要改的地方：貼上你的 GitHub Gist ID
+        // =============================================
+        const GIST_ID = '你的GistID貼這裡';
+        // =============================================
+        // 🔼 就這樣！其他都不用改
+        // =============================================
+        
+        const GIST_API = `https://api.github.com/gists/${GIST_ID}`;
+
+        // ===== 超大型字庫 (200+) =====
+        const wordBank = [
+            "貓咪", "星空", "海洋", "冒險", "吉他", "咖啡", "彩虹", 
+            "森林", "夢想", "閃電", "恐龍", "鋼琴", "雪花", "火箭",
+            "打字", "快速", "反應", "挑戰", "勝利", "傳說", "冠軍",
+            "蘋果", "香蕉", "西瓜", "葡萄", "檸檬", "櫻桃", "芒果",
+            "太陽", "月亮", "雲朵", "暴風", "火焰", "冰塊", "鑽石",
+            "忍者", "武士", "海盜", "機器", "幽靈", "寶藏", "地圖",
+            "書本", "鉛筆", "燈泡", "鑰匙", "時鐘", "星球", "音符",
+            "打字高手", "手速挑戰", "光速反應", "鍵盤俠", "快如閃電",
+            "一擊必中", "零失誤", "連擊之王", "傳說級", "無敵快手",
+            "cat", "dog", "sun", "moon", "star", "fire", "water",
+            "tree", "bird", "fish", "rain", "snow", "wind", "gold",
+            "hero", "zero", "love", "hate", "fast", "slow", "big",
+            "python", "html", "java", "code", "game", "play", "win",
+            "hello", "world", "speed", "type", "race", "zen",
+            "apple", "grape", "lemon", "cherry", "mango", "peach",
+            "rocket", "planet", "comet", "space", "alien", "robot",
+            "ninja", "pirate", "wizard", "dragon", "knight", "ghost",
+            "champion", "victory", "legend", "thunder", "diamond",
+            "treasure", "machine", "monster", "rainbow", "sunrise",
+            "keyboard", "monitor", "browser", "compile", "debug",
+            "function", "variable", "integer", "string", "array",
+            "hello世界", "game玩家", "speed速度", "win贏", "play玩",
+            "type打字", "race競速", "code編碼", "bug蟲", "fix修復",
+            "ctrl+c", "ctrl+v", "alt+tab", "shift", "enter",
+            "3.14159", "2.71828", "100%", "x+5=10", "42",
+            "qwerty", "asdfgh", "zxcvbn", "ytrewq", "mnbvcx",
+            "lalala", "hahaha", "hehehe", "xixixi", "wowowo",
+            "火龍果", "百香果", "奇異果", "哈密瓜", "藍莓", "覆盆子",
+            "長頸鹿", "北極熊", "無尾熊", "企鵝", "海豚", "老鷹",
+            "區塊鏈", "人工智慧", "元宇宙", "雲端", "大數據"
+        ];
+
+        function getRandomWord() {
+            let r = Math.random();
+            let pool;
+            if (r < 0.4) pool = wordBank.filter(w => w.length <= 3);
+            else if (r < 0.8) pool = wordBank.filter(w => w.length >= 4 && w.length <= 6);
+            else pool = wordBank.filter(w => w.length >= 7);
+            if (pool.length === 0) pool = wordBank;
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        // ===== 遊戲狀態 =====
+        let score = 0, timeLeft = 30, combo = 0, maxCombo = 0;
+        let timer = null, gameActive = false;
+        let playerName = localStorage.getItem('typingPlayerName') || '';
+        let personalBest = JSON.parse(localStorage.getItem('typingPersonalBest') || '{"score":0,"wpm":0,"combo":0}');
+        let currentTab = 'global';
+
+        // DOM
+        const targetWordEl = document.getElementById('targetWord');
+        const inputBox = document.getElementById('inputBox');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const wpmEl = document.getElementById('wpm');
+        const bestScoreEl = document.getElementById('bestScore');
+        const comboText = document.getElementById('comboText');
+        const leaderList = document.getElementById('leaderList');
+        const nameInput = document.getElementById('nameInput');
+        const personalBestDiv = document.getElementById('personalBest');
+        const pbNameEl = document.getElementById('pbName');
+        const pbScoreEl = document.getElementById('pbScore');
+        const pbWPMEl = document.getElementById('pbWPM');
+        const pbComboEl = document.getElementById('pbCombo');
+        const statusText = document.getElementById('statusText');
+
+        // 初始化
+        if (playerName) nameInput.value = playerName;
+        updatePersonalBestDisplay();
+        bestScoreEl.textContent = personalBest.score > 0 ? personalBest.score : '-';
+        loadLeaderboard();
+
+        // 事件綁定
+        document.getElementById('saveNameBtn').addEventListener('click', saveName);
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentTab = e.target.dataset.tab;
+                loadLeaderboard();
+            });
+        });
+        inputBox.addEventListener('input', handleTyping);
+
+        function saveName() {
+            const name = nameInput.value.trim();
+            if (!name) { alert('請輸入暱稱！'); return; }
+            playerName = name;
+            localStorage.setItem('typingPlayerName', playerName);
+            updatePersonalBestDisplay();
+            alert(`✅ 暱稱已儲存：${playerName}`);
+        }
+
+        function updatePersonalBestDisplay() {
+            if (!playerName || personalBest.score === 0) {
+                personalBestDiv.style.display = 'none';
+                return;
+            }
+            personalBestDiv.style.display = 'block';
+            pbNameEl.textContent = playerName;
+            pbScoreEl.textContent = personalBest.score;
+            pbWPMEl.textContent = personalBest.wpm;
+            pbComboEl.textContent = personalBest.combo || 0;
+        }
+
+        function startGame() {
+            if (!playerName) {
+                alert('請先輸入暱稱並儲存！');
+                nameInput.focus();
+                return;
+            }
+            score = 0; timeLeft = 30; combo = 0; maxCombo = 0; gameActive = true;
+            scoreEl.textContent = '0';
+            timerEl.textContent = '30';
+            wpmEl.textContent = '0';
+            comboText.textContent = '';
+            inputBox.value = '';
+            inputBox.disabled = false;
+            inputBox.focus();
+            targetWordEl.textContent = getRandomWord();
+            targetWordEl.style.color = '#fff';
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function resetGame() {
+            gameActive = false;
+            clearInterval(timer);
+            inputBox.disabled = true;
+            score = 0; timeLeft = 30; combo = 0;
+            scoreEl.textContent = '0';
+            timerEl.textContent = '30';
+            wpmEl.textContent = '0';
+            comboText.textContent = '';
+            inputBox.value = '';
+            targetWordEl.textContent = '準備開始';
+        }
+
+        async function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+            inputBox.disabled = true;
+            targetWordEl.textContent = '遊戲結束！';
+            let finalWPM = Math.round(score / 0.5);
+            
+            if (score > personalBest.score) {
+                personalBest = { score, wpm: finalWPM, combo: maxCombo };
+                localStorage.setItem('typingPersonalBest', JSON.stringify(personalBest));
+                bestScoreEl.textContent = score;
+                updatePersonalBestDisplay();
+                comboText.textContent = '🎉 新個人紀錄！';
+            }
+
+            if (playerName && score > 0) {
+                await uploadScore(playerName, score, finalWPM, maxCombo);
+            }
+        }
+
+        function handleTyping() {
+            if (!gameActive) return;
+            let typed = inputBox.value.trim();
+            let target = targetWordEl.textContent;
+            if (typed === target) {
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+                let bonus = combo >= 5 ? combo * 2 : 0;
+                score += 10 + bonus;
+                scoreEl.textContent = score;
+                wpmEl.textContent = Math.round(score / 0.5);
+                if (combo >= 3) {
+                    comboText.innerHTML = `🔥 ${combo} 連擊！${bonus > 0 ? ' +' + bonus + ' 加分' : ''}`;
+                } else {
+                    comboText.innerHTML = '';
+                }
+                inputBox.value = '';
+                targetWordEl.textContent = getRandomWord();
+                targetWordEl.style.animation = 'none';
+                setTimeout(() => targetWordEl.style.animation = 'glow 2s ease-in-out infinite', 10);
+            } else if (typed.length >= target.length) {
+                combo = 0;
+                comboText.innerHTML = '❌ 失誤！連擊中斷';
+                inputBox.value = '';
+                targetWordEl.style.color = '#ff6b6b';
+                setTimeout(() => targetWordEl.style.color = '#fff', 300);
+            }
+        }
+
+        // ===== GitHub Gist 排行榜 API =====
+        async function loadLeaderboard() {
+            leaderList.innerHTML = '<div class="leader-item"><span>🔄 載入中...</span></div>';
+            setStatus('load', '🔄 連線中...');
+            
+            if (!GIST_ID || GIST_ID === '你的GistID貼這裡') {
+                leaderList.innerHTML = '<div class="leader-item"><span>⚠️ 請先設定 Gist ID！</span></div>';
+                setStatus('err', '⚠️ 尚未設定 Gist ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(GIST_API);
+                if (!response.ok) throw new Error('讀取失敗');
+                const data = await response.json();
+                const files = data.files;
+                const filename = Object.keys(files)[0];
+                const raw = JSON.parse(files[filename].content);
+                const scores = raw.scores || [];
+                
+                if (currentTab === 'global') {
+                    scores.sort((a, b) => b.score - a.score);
+                } else {
+                    scores.sort((a, b) => b.timestamp - a.timestamp);
+                }
+                renderLeaderboard(scores.slice(0, 200), currentTab === 'recent');
+                setStatus('ok', `✅ 已載入 ${scores.length} 筆紀錄`);
+            } catch (e) {
+                leaderList.innerHTML = '<div class="leader-item"><span>⚠️ 排行榜暫時無法載入，請稍後再試</span></div>';
+                setStatus('err', '⚠️ 連線失敗，但遊戲仍可玩');
+                console.error(e);
+            }
+        }
+
+        async function uploadScore(name, score, wpm, combo) {
+            setStatus('load', '📤 上傳分數中...');
+            try {
+                const getRes = await fetch(GIST_API);
+                const data = await getRes.json();
+                const filename = Object.keys(data.files)[0];
+                const raw = JSON.parse(data.files[filename].content);
+                const scores = raw.scores || [];
+                
+                scores.push({ name, score, wpm, combo, timestamp: Date.now() });
+                // 保留前 500 筆
+                const trimmed = scores.sort((a, b) => b.score - a.score).slice(0, 500);
+                
+                await fetch(GIST_API, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        files: {
+                            [filename]: { content: JSON.stringify({ scores: trimmed }) }
+                        }
+                    })
+                });
+                
+                comboText.textContent += ' 📤 已上傳！';
+                setStatus('ok', '✅ 分數已上傳到全球排行榜');
+                loadLeaderboard();
+            } catch (e) {
+                comboText.textContent += ' ⚠️ 上傳失敗';
+                setStatus('err', '⚠️ 上傳失敗，但分數已存本地');
+                console.error(e);
+            }
+        }
+
+        function renderLeaderboard(data, showTime = false) {
+            if (data.length === 0) {
+                leaderList.innerHTML = '<div class="leader-item"><span>🏆 尚無紀錄，快來搶下第一名！</span></div>';
+                return;
+            }
+            leaderList.innerHTML = data.map((item, i) => {
+                let rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+                let meClass = (playerName && item.name === playerName) ? ' me' : '';
+                let timeStr = showTime ? new Date(item.timestamp).toLocaleString('zh-TW', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+                return `
+                    <div class="leader-item${meClass}">
+                        <span class="leader-rank ${rankClass}">#${i+1}</span>
+                        <span>${item.name}${meClass ? ' ⭐' : ''}</span>
+                        <span><strong>${item.score}</strong> 分</span>
+                        <span style="color:#aaa;font-size:11px;">${item.wpm} WPM${showTime ? ' · '+timeStr : ''}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setStatus(type, msg) {
+            statusText.textContent = msg;
+            statusText.className = 'status';
+            if (type === 'ok') statusText.classList.add('status-ok');
+            else if (type === 'err') statusText.classList.add('status-err');
+            else statusText.classList.add('status-load');
+        }
+    </script>
+</body>
+</html>
